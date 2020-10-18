@@ -1,0 +1,91 @@
+version: '3.1'
+
+networks:
+  network-zabbix:
+    driver: bridge
+
+services: 
+  mysql:
+    container_name: mysql
+    image: mysql
+    networks:
+      - network-zabbix
+    ports:
+      - '3306:3306'
+    volumes:
+      - './zabbix/mysql:/var/lib/data'
+    environment:
+      - MYSQL_ROOT_PASSWORD=$PASSWORD
+      - MYSQL_DATABASE=zabbix
+      - MYSQL_USER=zabbix
+      - MYSQL_PASSWORD=$MYSQL_PASSWORD
+    command: --character-set-server=utf8 --collation-server=utf8_bin --default-authentication-plugin=mysql_native_password   
+
+  zabbix-server: 
+    container_name: zabbix-server
+    image: zabbix/zabbix-server-mysql
+    networks:
+      - network-zabbix
+    links:
+      - mysql
+      - zabbix-java-gateway
+    restart: always
+    ports:
+      - '10051:10051'
+    volumes:
+      - './zabbix/alertscripts:/usr/lib/zabbix/alertscripts'
+    environment:
+      - DB_SERVER_HOST=mysql
+      - MYSQL_DATABASE=zabbix
+      - MYSQL_USER=zabbix
+      - MYSQL_PASSWORD=$MYSQL_PASSWORD
+      - ZBX_JAVAGATEWAY=zabbix-java-gateway
+    depends_on:
+      - mysql
+
+  zabbix-frontend: 
+    container_name: zabbix-frontend
+    image: zabbix/zabbix-web-nginx-mysql
+    networks:
+      - network-zabbix
+    links:
+      - mysql
+      - zabbix-server
+    restart: always
+    ports:
+      - '80:8080'
+    environment:
+      - DB_SERVER_HOST=mysql
+      - MYSQL_DATABASE=zabbix
+      - MYSQL_USER=zabbix
+      - MYSQL_PASSWORD=$MYSQL_PASSWORD
+      - PHP_TZ=America/Buenos_Aires
+    depends_on:
+      - mysql
+   
+  zabbix-agent:
+    container_name: zabbix-agent
+    image: zabbix/zabbix-agent
+    user: root
+    networks:
+      - network-zabbix
+    links:
+      - zabbix-server
+      - mysql
+    restart: always
+    privileged: true
+    volumes:
+      - /var/run:/var/run
+    ports:
+      - '10050:10050'
+    environment:
+      - ZBX_HOSTNAME=Zabbix server
+      - ZBX_SERVER_HOST=zabbix-server
+    
+  zabbix-java-gateway:
+    container_name: zabbix-java-gateway
+    image: zabbix/zabbix-java-gateway
+    networks:
+     - network-zabbix
+    restart: always
+        
