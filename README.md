@@ -4,17 +4,13 @@ Docker-compose para desplegar un servidor Zabbix.
 
 ---
 #### Notas
-usar la ip del contenedor "zabbix-agent" para la recolección de datos en zabbix-server
 
-- docker inspect zabbix-agent | grep "IPAddress\":"
----
+- contraseña por defaut Admin : zabbix
 
-docker-compose stop
+-  Agregar hosts:
+  - Configurations --> Hosts
+  - En Agent Interfaces: 
+     - Usar la ip del contenedor "zabbix-agent" para monitorear al Servidor Zabbix 
+     - docker inspect zabbix-agent | grep "IPAddress\":" 
 
-docker-compose rm -f
-
-docker ps -aq
-
-docker stop $(docker ps -aq)
-
-docker rm $(docker ps -aq)
+- Al agregar hosts tener en cuenta los templates
